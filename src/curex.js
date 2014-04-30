@@ -1,38 +1,59 @@
-var Backbone = require('backbone');
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
 var chokidar = require('chokidar');
-
 var Monitors = require('./collections/monitors.js');
-
 var monitors = new Monitors();
+var configPath;
+var config;
 
 
-var configPath = path.resolve(process.argv[2]);
+module.exports = {
 
-if (! fs.existsSync(configPath)) {
-  console.error("requires a javascript configuration file as an argument");
-  process.exit(2);
-}
+  checkConfig: function(argv) {
+    configPath = path.resolve(argv.config);
+    if (fs.existsSync(configPath)) {
+      try {
+        config = require(configPath);
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
+    } else {
+      console.error("No such file "+configPath);
+      return false;
+    }
+  },
 
-var watcher = chokidar.watch(configPath, { persistent: true });
-watcher.on('change', function(path, stats) {
-  console.log("loading new configuration");
-  monitors.each(function(mon) { mon.finish() });
-  monitors = new Monitors();
-  start();
-});
+  watchConfig: function() {
+    var watcher = chokidar.watch(configPath, { persistent: true });
+    watcher.on('change', function(path, stats) {
+      try {
+        console.log("loading new configuration");
+        monitors.each(function(mon) { mon.finish() });
+        monitors = new Monitors();
+        start();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  },
 
-function start() {
-  var config = require(configPath);
-  if (Object.keys(config).length === 0) {
-    console.error("define some stuff to monitor in "+configPath);
-    process.exit(2);
+  startMonitoring: function() {
+    try {
+      var config = require(configPath);
+      if (Object.keys(config).length === 0) {
+        console.error("define some stuff to monitor in "+configPath);
+      }
+      _.each(config, function(value, key) {
+        try {
+          monitors.add(_.extend(value, {name: key}));
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
-  _.each(config, function(value, key) {
-    monitors.add(_.extend(value, {name: key}));
-  });
 }
-
-start();
