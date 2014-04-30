@@ -26,9 +26,11 @@ module.exports = {
         // mon is a backbone model representing the server monitor
         var n = mon.get('name') //= "my_service"
         // e.g. require('sms_sender').sendSMS(1234567890, n+" is down!!!");
+        // or perhaps send a Raven (getsentry.com)
       },
-      alertEnded: function(downtime) {
+      alertEnded: function(mon) {
         // calm yourself, everything is cool now
+        // downtime is a Date() object
       }
     }
   }
