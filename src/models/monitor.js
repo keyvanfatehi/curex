@@ -5,8 +5,7 @@ require('../../lib/readable-range.js')(moment);
 var Monitor = module.exports = require('backbone').Model.extend({
   defaults: {
     frequency: 1000 * 60 * 5, // every 5 minutes
-    expectStatusCode: 200,
-    bodyMatchPattern: ""
+    expectStatusCode: 200
   },
 
   normalize: function() {
@@ -15,20 +14,20 @@ var Monitor = module.exports = require('backbone').Model.extend({
   },
 
   initialize: function() {
-    this.alertState = false;
     this.normalize();
+    this.alertState = false;
 
     var banner = "Monitoring '"+this.get('name')+"' by hitting "+this.get('url')+
                 " every "+(this.get('frequency') / 1000)+" seconds."+
                 "\n\tExpecting status code: "+this.get('expectStatusCode');
 
-    if (this.get('bodyMatchPattern').length > 0) {
+    if (typeof this.attributes.expectMatchBody === "object") {
+      this.pattern = this.attributes.expectMatchBody;
       this.matchBody = true;
-      this.banner += "\n\tExpecting body to match /"+ this.get('bodyMatchPattern')+"/";
-      this.regexp = new RegExp(this.get('bodyMatchPattern'));
+      banner += "\n\tExpecting body to match "+ this.pattern.toString();
     }
-    console.log(banner);
     this.interval_id = this.start();
+    console.log(banner);
   },
 
   start: function() {
@@ -43,8 +42,17 @@ var Monitor = module.exports = require('backbone').Model.extend({
                     this.get('expectStatusCode') +
                     " but got "+response.statusCode);
         } else {
-          // any other contingencies? no? then success is fine
-          this.success(body);
+          if (this.matchBody) {
+            if (this.pattern.test(body)) {
+              this.success();
+            } else {
+              this.fail("expected body to match "+this.pattern.toString()+
+                       " but got "+body);
+            }
+          } else {
+            // any other contingencies? no? then success is fine
+            this.success();
+          }
         }
       } else {
         this.fail(error);
@@ -57,13 +65,13 @@ var Monitor = module.exports = require('backbone').Model.extend({
     console.log("Finished");
   },
 
-  success: function(body, response) {
+  success: function() {
     if (this.alertState) {
       this.alertState = false;
       var m1 = moment(new Date());
       var m2 = moment(this.alertStateTimestamp);
       var diff = moment.preciseDiff(m1, m2);
-      this.attributes.alertEnded(this, diff);
+      this.attributes.alertEnded(diff);
       this.alertStateTimestamp = null;
     }
   },
@@ -72,7 +80,7 @@ var Monitor = module.exports = require('backbone').Model.extend({
     if (! this.alertState) {
       this.alertState = true;
       this.alertStateTimestamp = new Date();
-      this.attributes.alertBegan(this, error);
+      this.attributes.alertBegan(error);
     }
   }
 });
