@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+var Curex = require('../src/curex');
+var argv = require('yargs').
+  usage("Monitor http services\nUsage: curex -c path/to/config.js").
+  demand("c").
+  alias("c", "config").
+  describe("c", "javascript config file path").
+  check(Curex.checkConfig).argv;
+
+Curex.watchConfig();
+Curex.startMonitoring();
