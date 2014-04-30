@@ -1,0 +1,28 @@
+{
+  "name": "curex",
+  "version": "0.0.0",
+  "description": "curex ---",
+  "main": "curex.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/keyvanfatehi/curex.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/keyvanfatehi/curex/issues"
+  },
+  "homepage": "https://github.com/keyvanfatehi/curex",
+  "dependencies": {
+    "backbone": "^1.1.2",
+    "chokidar": "^0.8.2",
+    "request": "^2.34.0",
+    "underscore": "^1.6.0"
+  },
+  "devDependencies": {
+    "underscore": "^1.6.0"
+  }
+}
