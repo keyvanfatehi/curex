@@ -1,15 +1,18 @@
 curex
 ---
 
-a simple http service monitoring program to help you cure your extremely annoying downtime issues -- be sure to have error reporting and logging, otherwise you'll be pretty bummed when the service is down, curex lets you know, and you have no idea what to do ;)
+a simple http service monitoring daemon
+
+### install:
+
+`npm install -g curex`
 
 ### usage:
 
-0. `npm install curex -g`
-0. create a config.js file anywhere -- see example below
-0. run `curex path/to/config.js` to monitor your services
+0. create a config script somewhere, like the example below
+0. run `curex -c path/to/config_script.js`
 
-you can change your config.js anytime, it will be re-evaluated
+you can change your config script anytime, it will be re-evaluated
 
 ### example config
 
@@ -22,14 +25,14 @@ module.exports = {
     frequency: 1000 * 60 * 5, // how often to make a request (optional, defaults to 5 minutes)
     expectStatusCode: 200, // http status code (optional, defaults to 200)
     expectMatchBody: new RegExp("all good in the hood"), // (optional, doesn't check body by default)
-    alertBegan: function() {
-      // mon is a backbone model representing the server monitor
+    alertBegan: function(reason) {
+      // reason could be a string or an object
       // e.g. require('sms_sender').sendSMS(1234567890, "my app is down!!!");
-      // or perhaps send a Raven (getsentry.com)
+      // or perhaps send a Raven with https://github.com/getsentry/raven-node
     },
     alertEnded: function(downtime) {
-      // find a way to calm yourself, everything is cool now, your checks were good
       // downtime is a human-readable string. e.g. "4 minutes 5 seconds"
+      // let yourself know everything is ok now
     }
   },
   my_other_app: {
@@ -37,4 +40,3 @@ module.exports = {
   }
 };
 ```
-
