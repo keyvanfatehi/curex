@@ -1,6 +1,6 @@
 {
   "name": "curex",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "simple http server monitor",
   "main": "src/curex.js",
   "preferGlobal": true,
@@ -23,6 +23,7 @@
   "dependencies": {
     "backbone": "^1.1.2",
     "chokidar": "^0.8.2",
+    "moment": "^2.6.0",
     "request": "^2.34.0",
     "underscore": "^1.6.0",
     "yargs": "^1.2.1"

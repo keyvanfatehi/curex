@@ -62,7 +62,6 @@ var Monitor = module.exports = require('backbone').Model.extend({
 
   finish: function() {
     clearInterval(this.interval_id);
-    console.log("Finished");
   },
 
   success: function() {
