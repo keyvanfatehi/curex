@@ -1,3 +1,4 @@
+var util = require('util');
 var request = require('request');
 var moment = require('moment');
 require('../../lib/readable-range.js')(moment);
@@ -5,7 +6,8 @@ require('../../lib/readable-range.js')(moment);
 var Monitor = module.exports = require('backbone').Model.extend({
   defaults: {
     frequency: 1000 * 60 * 5, // every 5 minutes
-    expectStatusCode: 200
+    expectStatusCode: 200,
+    raven: false
   },
 
   normalize: function() {
@@ -15,6 +17,7 @@ var Monitor = module.exports = require('backbone').Model.extend({
 
   initialize: function() {
     this.normalize();
+    this.setupRaven();
     this.alertState = false;
 
     var banner = "Monitoring '"+this.get('name')+"' by hitting "+this.get('url')+
@@ -31,6 +34,7 @@ var Monitor = module.exports = require('backbone').Model.extend({
   },
 
   start: function() {
+    this.check();
     return setInterval(this.check.bind(this), this.get('frequency'));
   },
 
@@ -40,14 +44,13 @@ var Monitor = module.exports = require('backbone').Model.extend({
         if (response.statusCode != this.get('expectStatusCode')) {
           this.fail("expected status code "+
                     this.get('expectStatusCode') +
-                    " but got "+response.statusCode);
+                    " but got "+response.statusCode, body);
         } else {
           if (this.matchBody) {
             if (this.pattern.test(body)) {
               this.success();
             } else {
-              this.fail("expected body to match "+this.pattern.toString()+
-                       " but got "+body);
+              this.fail("expected body to match "+this.pattern.toString(), body);
             }
           } else {
             // any other contingencies? no? then success is fine
@@ -55,7 +58,7 @@ var Monitor = module.exports = require('backbone').Model.extend({
           }
         }
       } else {
-        this.fail(error);
+        this.fail(error, body);
       }
     }.bind(this));
   },
@@ -64,22 +67,69 @@ var Monitor = module.exports = require('backbone').Model.extend({
     clearInterval(this.interval_id);
   },
 
-  success: function() {
-    if (this.alertState) {
+  alert: function(down, details) {
+    if (down) {
+      this.alertState = true;
+      this.alertStateTimestamp = new Date();
+    } else {
       this.alertState = false;
       var m1 = moment(new Date());
       var m2 = moment(this.alertStateTimestamp);
-      var diff = moment.preciseDiff(m1, m2);
-      this.attributes.alertEnded(diff);
+      this.set('downtime') = moment.preciseDiff(m1, m2);
+    }
+    var message = "Downtime alert "+(this.alertState ? "began" : "ended")+" for "+this.get('name')+" @ "+this.get('url');
+    if (typeof details !== "undefined") {
+      message += " -- "+util.format(details);
+    }
+    return message;
+  },
+
+  success: function() {
+    if (this.alertState) {
+      var message = this.alert(true);
+      try {
+        this.attributes.alertEnded(this.get('downtime'), message);
+      } catch (e) {
+        console.log("alertEnded is unused");
+      }
       this.alertStateTimestamp = null;
     }
   },
 
-  fail: function(error) {
+  fail: function(error, body) {
+    var details = {error: error, body: body};
     if (! this.alertState) {
-      this.alertState = true;
-      this.alertStateTimestamp = new Date();
-      this.attributes.alertBegan(error);
+      var message = this.alert(true, error);
+      try {
+        this.attributes.alertBegan(details, message);
+      } catch(e) {
+        console.log("alertBegan is unused");
+      }
+    }
+  },
+
+  sendRaven: function(message) {
+    try {
+      this.ravenClient.captureMessage(message, {
+        level: (this.alertState ? "fatal" : "info")
+      })
+    } catch(e) {
+      console.error("Failed to send raven", e);
+    }
+  },
+
+  setupRaven: function() {
+    if (!this.get('raven')) {  return; }
+    var raven;
+    try {
+      raven = require('raven');
+    } catch (e) {
+      console.error("You must install module `raven` in order to use it");
+    }
+    try {
+      this.ravenClient = new raven.Client(this.get('raven'))
+    } catch (e) {
+      console.error("Failed to create raven client", e);
     }
   }
 });
