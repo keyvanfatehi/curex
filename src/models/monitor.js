@@ -1,23 +1,28 @@
 var util = require('util');
-var request = require('request');
+var http = require('http');
+var https = require('https');
 var moment = require('moment');
 require('../../lib/readable-range.js')(moment);
 
 var Monitor = module.exports = require('backbone').Model.extend({
   defaults: {
+    name: "unnamed",
     frequency: 1000 * 60 * 5, // every 5 minutes
     expectStatusCode: 200,
     raven: false
   },
 
-  normalize: function() {
+  initialize: function() {
     this.set('frequency', parseInt(this.get('frequency')));
     this.set('expectStatusCode', parseInt(this.get('expectStatusCode')));
-  },
-
-  initialize: function() {
-    this.normalize();
-    this.setupRaven();
+    this.proto = null;
+    if (/^https/.test(this.get('url'))) {
+      this.proto = https;
+    } else if (/^http/.test(this.get('url'))) {
+      this.proto = http;
+    } else {
+      throw new Error("unknown protocol!");
+    }
     this.alertState = false;
 
     var banner = "Monitoring '"+this.get('name')+"' by hitting "+this.get('url')+
@@ -29,17 +34,25 @@ var Monitor = module.exports = require('backbone').Model.extend({
       this.matchBody = true;
       banner += "\n\tExpecting body to match "+ this.pattern.toString();
     }
-    this.interval_id = this.start();
     console.log(banner);
   },
 
   start: function() {
     this.check();
+    this.interval_id = this.start();
     return setInterval(this.check.bind(this), this.get('frequency'));
   },
 
   check: function() {
-    request(this.get('url'), function (error, response, body) {
+    this.proto.get(this.get('url'), function (response) {
+    }).on('error', function(e) { 
+      if (response.statusCode != this.get('expectStatusCode')) {
+        this.fail("expected status code "+
+                  this.get('expectStatusCode') +
+                  " but got "+response.statusCode, body);
+      }
+    });
+      /*
       if (!error) {
         if (response.statusCode != this.get('expectStatusCode')) {
           this.fail("expected status code "+
@@ -60,7 +73,7 @@ var Monitor = module.exports = require('backbone').Model.extend({
       } else {
         this.fail(error, body);
       }
-    }.bind(this));
+    }.bind(this)); */
   },
 
   finish: function() {

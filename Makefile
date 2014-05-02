@@ -7,4 +7,4 @@ tdd:
 	mocha test/**/*.js -w
 
 cover:
-	istanbul cover node_modules/mocha/bin/_mocha test/**/*.js -w
+	istanbul cover node_modules/mocha/bin/_mocha ./test/monitor_test.js

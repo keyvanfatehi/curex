@@ -56,7 +56,7 @@ module.exports = {
     try {
       _.each(config, function(value, key) {
         try {
-          monitors.add(_.extend(value, {name: key}));
+          monitors.add(_.extend(value, {name: key})).start();
         } catch (e) {
           console.error(e);
         }
