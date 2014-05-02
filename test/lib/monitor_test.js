@@ -1,5 +1,5 @@
-var TestHelper = require('./test_helper.js')
-var Monitor = require('../src/models/monitor.js');
+var TestHelper = require('../test_helper.js')
+var Monitor = require('../../lib/models/monitor.js');
 
 describe("Monitor", function() {
   var monitor = null;
@@ -47,4 +47,3 @@ describe("Monitor", function() {
     it("calls check() immediately");
   });
 });
-

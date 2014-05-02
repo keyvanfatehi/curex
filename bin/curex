@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var Curex = require('../src/curex');
+var Curex = require('../lib/curex');
 
 var argv = require('yargs').
   usage("Monitor http services\nUsage: curex -c path/to/config.js").

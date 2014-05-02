@@ -2,7 +2,7 @@
   "name": "curex",
   "version": "0.0.3",
   "description": "simple http server monitor",
-  "main": "src/curex.js",
+  "main": "lib/curex.js",
   "preferGlobal": true,
   "bin": {
     "curex": "./bin/curex"
